@@ -29,3 +29,16 @@ For this section, we will make use of the dplyr function to answer some explorat
 
 ```{r Song Data}
 library(dplyr)
+songs <- as_tibble(spotify_songs)
+songs <- arrange(songs, track_album_release_date) ## Arrange by date
+songs %>%
+  count(playlist_genre, sort = TRUE)
+songs %>%
+  filter(playlist_genre == "latin") %>%
+  summarize(energy = mean(energy, na.rm = TRUE), acousticness = mean(acousticness, na.rm = TRUE))
+songs %>%
+  group_by(playlist_genre) %>%
+  summarize(duration_ms = mean(duration_ms, na.rm = TRUE))
+
+```
+
