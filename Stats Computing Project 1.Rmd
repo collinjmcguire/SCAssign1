@@ -27,18 +27,44 @@ glimpse(spotify_songs)
 
 For this section, we will make use of the dplyr function to answer some exploratory data analysis questions about the Spotify song data
 
-```{r Song Data}
+
+######1.
+
+```{r Count}
 library(dplyr)
 songs <- as_tibble(spotify_songs)
 songs <- arrange(songs, track_album_release_date) ## Arrange by date
 songs %>%
   count(playlist_genre, sort = TRUE)
+```
+
+######2.
+
+```{r Average Value}
 songs %>%
   filter(playlist_genre == "latin") %>%
   summarize(energy = mean(energy, na.rm = TRUE), acousticness = mean(acousticness, na.rm = TRUE))
+```
+
+######3.
+
+```{r Duration}
 songs %>%
   group_by(playlist_genre) %>%
   summarize(duration_ms = mean(duration_ms, na.rm = TRUE))
-
 ```
 
+######4. 
+
+```{r Boxplots}
+med <- summarize(songs, tempo = median(tempo, na.rm = TRUE))
+tempo_set <- songs %>%
+  mutate(tempo_cat = case_when(
+    tempo >= med$tempo ~ "Fast",
+    tempo < med$tempo ~ "Slow"
+  ))
+
+base <- tempo_set %>%
+          ggplot(aes(tempo_cat, danceability))
+base + geom_boxplot()
+```
