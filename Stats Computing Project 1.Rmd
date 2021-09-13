@@ -1,0 +1,31 @@
+---
+title: "Stats Computing Project 1"
+author: "Collin McGuire"
+date: "9/13/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Statistical Computing Project 1
+###Collin McGuire
+
+#####Initial Setup
+
+First, we load the tidyverse package. Then we load in the Tidy Tuesday date from January 21, 2020, which we then save 
+
+```{r Load Data}
+library(tidyverse)
+tuesdaydata <- tidytuesdayR::tt_load('2020-01-21') ## Load the Tidy Tuesday data from 2020-01-21 and save as tuesdaydata
+spotify_songs <- tuesdaydata$spotify_songs
+glimpse(spotify_songs)
+```
+
+#####Part 1
+
+For this section, we will make use of the dplyr function to answer some exploratory data analysis questions about the Spotify song data
+
+```{r Song Data}
+library(dplyr)
