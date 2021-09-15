@@ -68,3 +68,31 @@ base <- tempo_set %>%
           ggplot(aes(tempo_cat, danceability))
 base + geom_boxplot()
 ```
+
+#####Part 2
+
+```{r Part 2}
+library(lubridate)
+part2 <- distinct(spotify_songs,
+                  track_name, track_artist,
+                  .keep_all = TRUE)
+year_data <- ymd(part2$track_album_release_date, quiet = FALSE, tz = NULL, truncated = 2)
+only_year <- year(year_data)
+post_1980 <- part2 %>%
+  mutate(year_released = only_year) %>%
+  filter(year_released >= 1980)
+post_1980 <- post_1980 %>%
+  mutate(duration_in_minutes = duration_ms / 60000)
+average_by_year <- post_1980 %>%
+  group_by(year_released) %>%
+  summarize(loudness = mean(loudness, na.rm = TRUE),
+            instrumentalness = mean(instrumentalness, na.rm = TRUE),
+            danceability = mean(danceability, na.rm = TRUE),
+            energy = mean(energy, na.rm = TRUE),
+            speechiness = mean(speechiness, na.rm = TRUE),
+            tempo = mean(tempo, na.rm = TRUE),)
+average_by_year %>%
+  pivot_longer(-year_released, names_to = "feature", values_to = "mean_score")
+```
+
+#####Part 3.
