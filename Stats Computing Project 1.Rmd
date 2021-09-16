@@ -20,7 +20,6 @@ First, we load the tidyverse package. Then we load in the Tidy Tuesday date from
 library(tidyverse)
 tuesdaydata <- tidytuesdayR::tt_load('2020-01-21') ## Load the Tidy Tuesday data from 2020-01-21 and save as tuesdaydata
 spotify_songs <- tuesdaydata$spotify_songs
-glimpse(spotify_songs)
 ```
 
 #####Part 1
@@ -99,10 +98,14 @@ tidy_average_by_year <- average_by_year %>%
 
 ```{r Part 3 Data Viz}
 
-baseplot <- ggplot(tidy_average_by_year, aes(x = year_released, y = mean_score))
-baseplot + geom_point(color = "sienna3") +
+baseplot <- ggplot(tidy_average_by_year, aes(x = year_released, y = mean_score, color = feature))
+baseplot + geom_point() +
   facet_wrap(feature ~ ., scales = "free_y", shrink = TRUE) +
   geom_smooth() +
-  labs(title = "Song Characteristics by Year", x = "Year", y = "Average Characteristic Value")
+  labs(title = "Song Characteristics by Year", subtitle = "Characteristics such as energy, tempo, and instrumentalness all reached a nadir around the late \n 1990's and early 2000's before climbing again to a peak in the 2010's. Loudness, danceability, \n and speechiness, however, all started off relatively lower than the other three characteristics, \n but steadily increased to their maximum as the years progressed.", caption = "Collin McGuire", x = "Year", y = "Average Characteristic Value") +
+  theme_bw()
   
 ```
+
+#####Part 4
+
