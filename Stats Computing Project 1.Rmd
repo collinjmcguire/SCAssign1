@@ -9,10 +9,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-#Statistical Computing Project 1
-###Collin McGuire
+# Statistical Computing Project 1
+### Collin McGuire
 
-#####Initial Setup
+##### Initial Setup
 
 First, we load the tidyverse package. Then we load in the Tidy Tuesday date from January 21, 2020, which we then save 
 
@@ -22,12 +22,12 @@ tuesdaydata <- tidytuesdayR::tt_load('2020-01-21') ## Load the Tidy Tuesday data
 spotify_songs <- tuesdaydata$spotify_songs
 ```
 
-#####Part 1
+##### Part 1
 
 For this section, we will make use of the dplyr function to answer some exploratory data analysis questions about the Spotify song data
 
 
-######1.
+###### 1.
 
 ```{r Count}
 library(dplyr)
@@ -37,7 +37,7 @@ songs %>%
   count(playlist_genre, sort = TRUE)
 ```
 
-######2.
+###### 2.
 
 ```{r Average Value}
 songs %>%
@@ -45,7 +45,7 @@ songs %>%
   summarize(energy = mean(energy, na.rm = TRUE), acousticness = mean(acousticness, na.rm = TRUE))
 ```
 
-######3.
+###### 3.
 
 ```{r Duration}
 songs %>%
@@ -53,7 +53,7 @@ songs %>%
   summarize(duration_ms = mean(duration_ms, na.rm = TRUE))
 ```
 
-######4. 
+###### 4. 
 
 ```{r Boxplots}
 med <- summarize(songs, tempo = median(tempo, na.rm = TRUE))
@@ -68,7 +68,7 @@ base <- tempo_set %>%
 base + geom_boxplot()
 ```
 
-#####Part 2
+##### Part 2
 
 ```{r Part 2}
 library(lubridate)
@@ -94,18 +94,81 @@ tidy_average_by_year <- average_by_year %>%
   pivot_longer(-year_released, names_to = "feature", values_to = "mean_score")
 ```
 
-#####Part 3.
+##### Part 3.
 
-```{r Part 3 Data Viz}
-
+```{r Part 3 Data Viz, fig.height = 8, fig.width = 12}
 baseplot <- ggplot(tidy_average_by_year, aes(x = year_released, y = mean_score, color = feature))
-baseplot + geom_point() +
-  facet_wrap(feature ~ ., scales = "free_y", shrink = TRUE) +
+baseplot + geom_point() + 
+  facet_wrap(feature ~ ., scales = "free") +
   geom_smooth() +
-  labs(title = "Song Characteristics by Year", subtitle = "Characteristics such as energy, tempo, and instrumentalness all reached a nadir around the late \n 1990's and early 2000's before climbing again to a peak in the 2010's. Loudness, danceability, \n and speechiness, however, all started off relatively lower than the other three characteristics, \n but steadily increased to their maximum as the years progressed.", caption = "Collin McGuire", x = "Year", y = "Average Characteristic Value") +
-  theme_bw()
-  
+  labs(title = "Song Characteristics by Year", subtitle = "Characteristics such as energy, tempo, and instrumentalness all reached a nadir around the late 1990's and early 2000's before climbing again to a peak in the 2010's. \nLoudness, danceability, and speechiness, however, all started off relatively lower than the other three characteristics, but steadily increased to their maximum over time" , caption = "Collin McGuire", x = "Year", y = "Average Characteristic Value") +
+  theme(axis.text.x = element_text(size = 6, angle = 45, hjust=1), axis.line = element_line(color = "black"), plot.background = element_rect(fill = "grey87"), panel.background = element_rect(fill = "ghostwhite"))
 ```
 
-#####Part 4
+##### Part 4
 
+```{r Part 4 Ugly Graph}
+# folder <- "nickelback"
+# if (file.exists(folder)) {
+#  cat("This folder already exists")
+# } else {
+#  dir.create(folder)
+# }
+# 
+# image_url <- "https://github.com/collinjmcguire/SCAssign1/raw/main/nickelback.jpg"
+# dest_file <- "../nickelback/nickelback.jpg"
+# download.file(image_url, "./nickelback/nickelback.jpg", mode = "wb")
+# nickelback_background <- readJPEG("./nickelback/nickelback.jpg")
+
+p4base <- ggplot(post_1980, aes(x = track_popularity, y = year_released, fill = playlist_genre, color = playlist_subgenre))
+p4base + geom_hex(alpha = 0.05) +
+  geom_smooth() +
+  ggtitle("Popularity and Year") +
+  theme(axis.text.x = element_text(size = 24, angle = 85), title = element_text(size = 3), 
+        legend.text = element_text(family = "HersheySymbol", face = "bold.italic"),
+        plot.background = element_rect(fill = "darkmagenta"))
+
+
+```
+
+* The first modification I made to the graph was to increase the axis labels to an unreasonably large size, and then angle them at 85 degrees. Angling and enlarging the labels can be useful when the labels overlap, as in Part 5.
+
+* The second modification I made was to have the fill and color represent different variables, which is extremely difficult to decipher on this figure. This modification might be useful if there were fewer categories and datapoints.
+
+* The third modification I made was adjusting the alpha value to 0.05, making the hexagons almost transparent. This feature would be helpful for layered graphs, as it allows for seeing the layers underneath.
+
+* The fourth modification I made was adding a lowess smoother line, which can be helpful to show trends in scatterplot. In this case, the line detracts from the figure, although there wasn't much to detract from in the first place.
+
+* The fifth modification I made was making the titles of the graph very small. Adjusting the size of the titles could be useful to make them more visible.
+
+* The sixth modification I made was changing the font of my legend to Greek symbols. This could be useful if you were performing math equations and needed Greek symbols
+
+* The seventh modification I made was changing the background to magenta. Changing the background of a plot can be useful to help the figure stand out against the background.
+
+
+##### Part 5
+
+```{R Part 5, fig.height = 8, fig.width = 12}
+
+spotify_songs %>% 
+  ggplot(aes(y=track_popularity, x=playlist_subgenre, fill = playlist_genre)) + 
+  geom_violin() +
+  facet_wrap( ~ playlist_genre, scales = "free_x") +
+  theme(axis.text.x = element_text(size = 10, color = "black", angle = 45, hjust=1))
+
+
+```
+
+* The first modification I made
+
+* The second modification I made
+
+* The third modification I made
+
+* The fourth modification I made
+
+* The fifth modification I made
+
+* The sixth modification I made
+
+* The seventh modification I made
