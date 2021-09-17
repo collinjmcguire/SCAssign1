@@ -14,30 +14,34 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ##### Initial Setup
 
-First, we load the tidyverse package. Then we load in the Tidy Tuesday date from January 21, 2020, which we then save 
+First, we load the tidyverse package. Then we load in the Tidy Tuesday date from January 21, 2020, which we then save as spotify_songs 
 
 ```{r Load Data}
 library(tidyverse)
-tuesdaydata <- tidytuesdayR::tt_load('2020-01-21') ## Load the Tidy Tuesday data from 2020-01-21 and save as tuesdaydata
+tuesdaydata <- tidytuesdayR::tt_load('2020-01-21') # Load the Tidy Tuesday data from 2020-01-21 and save as tuesdaydata
 spotify_songs <- tuesdaydata$spotify_songs
 ```
 
-##### Part 1
+##### Part 1: Explore Data
 
 For this section, we will make use of the dplyr function to answer some exploratory data analysis questions about the Spotify song data
 
 
-###### 1.
+###### 1. How many songs are in each genre
+
+The number of songs in each genre are displayed in the tibble below:
 
 ```{r Count}
 library(dplyr)
 songs <- as_tibble(spotify_songs)
-songs <- arrange(songs, track_album_release_date) ## Arrange by date
+songs <- arrange(songs, track_album_release_date) # Arrange by date
 songs %>%
   count(playlist_genre, sort = TRUE)
 ```
 
-###### 2.
+###### 2.What is average value of energy and acousticness in the latin genre in this dataset?
+
+The average values for energy and acousticsness of the latin genre are displayed in the tibble below:
 
 ```{r Average Value}
 songs %>%
@@ -45,43 +49,76 @@ songs %>%
   summarize(energy = mean(energy, na.rm = TRUE), acousticness = mean(acousticness, na.rm = TRUE))
 ```
 
-###### 3.
+###### 3.Calculate the average duration of song (in minutes) across all subgenres. Which subgenre has the longest song on average?
+
+The genre with the longest song on average is New Jack Swing.
 
 ```{r Duration}
 songs %>%
-  group_by(playlist_genre) %>%
-  summarize(duration_ms = mean(duration_ms, na.rm = TRUE))
+  group_by(playlist_subgenre) %>%
+  summarize(duration_ms = mean(duration_ms/60000, na.rm = TRUE)) %>%
+  arrange(desc(duration_ms))
 ```
 
-###### 4. 
+###### 4. Make two boxplots side-by-side of the danceability of songs stratifying by whether a song has a fast or slow tempo. Define fast tempo as any song that has a tempo above its median value. On average, which songs are more danceable?
+
+On average, slow songs are more danceable than fast songs.
 
 ```{r Boxplots}
+# Save the median value as med, then create a new column,
+# tempo_cat which takes on a value based on the value of med
 med <- summarize(songs, tempo = median(tempo, na.rm = TRUE))
 tempo_set <- songs %>%
   mutate(tempo_cat = case_when(
     tempo >= med$tempo ~ "Fast",
     tempo < med$tempo ~ "Slow"
   ))
-
+# Create a base ggplot, then add a boxplot geom
 base <- tempo_set %>%
-          ggplot(aes(tempo_cat, danceability))
+          ggplot(aes(tempo_cat, danceability, fill = tempo_cat))
 base + geom_boxplot()
 ```
 
-##### Part 2
+##### Part 2: Convert nontidy data into tidy data
 
-```{r Part 2}
-library(lubridate)
+In this section, we will take a non-tidy dataset and turn it into tidy data.
+
+###### 1. Select only unique distinct rows from the dataset based on the track_name and track_artist columns 
+
+```{r Part2:1}
+# Use the distinct function from the dplyr package to select
+# unique combinations of track_name and track_artist
 part2 <- distinct(spotify_songs,
                   track_name, track_artist,
                   .keep_all = TRUE)
+```
+
+###### 2/3. Add a new column called year_released listing just the year that the song was released. Keep only songs that were released in or after 1980
+
+```{r Part2:2&3}
+# Use the ymd function from the lubridate package to parse the year
+# Use the year function to strip the date down to year
+# Add a new column with the mutate function, and filter to newer than 1980
+library(lubridate)
 year_data <- ymd(part2$track_album_release_date, quiet = FALSE, tz = NULL, truncated = 2)
 only_year <- year(year_data)
 post_1980 <- part2 %>%
   mutate(year_released = only_year) %>%
   filter(year_released >= 1980)
+```
+
+###### 4. Add a new column with the duration of the song in minutes
+
+```{r Part2:4}
+# Add a new column by dividing the duration in ms by 60,000
 post_1980 <- post_1980 %>%
   mutate(duration_in_minutes = duration_ms / 60000)
+```
+
+###### 5. For each year_released, calculate the mean of at least 6 of the audio features or descriptors
+
+```{r Part2:5}
+# Create average by year with group_by and summarize
 average_by_year <- post_1980 %>%
   group_by(year_released) %>%
   summarize(loudness = mean(loudness, na.rm = TRUE),
@@ -90,41 +127,46 @@ average_by_year <- post_1980 %>%
             energy = mean(energy, na.rm = TRUE),
             speechiness = mean(speechiness, na.rm = TRUE),
             tempo = mean(tempo, na.rm = TRUE),)
+```
+
+###### 6. Convert this wide dataset into a long dataset with a new feature and mean_score column
+
+```{r Part2:6}
+# Use the pivot_longer command to create a tidy dataset
 tidy_average_by_year <- average_by_year %>%
   pivot_longer(-year_released, names_to = "feature", values_to = "mean_score")
 ```
 
-##### Part 3.
+##### Part 3: Data visualization
+
+In this part of the project, we will visualize the tidy dataset we created in Part 2.
 
 ```{r Part 3 Data Viz, fig.height = 8, fig.width = 12}
+# Set a figure width, and a baseplot with year released and mean score
+# Use the facet_wrap feature with the scales option to create a grid
+# Add a lowess smoother with geom_smooth, titles with labs
+# Use theme to adjust axis test, plot and panel backgrounds
 baseplot <- ggplot(tidy_average_by_year, aes(x = year_released, y = mean_score, color = feature))
 baseplot + geom_point() + 
   facet_wrap(feature ~ ., scales = "free") +
   geom_smooth() +
-  labs(title = "Song Characteristics by Year", subtitle = "Characteristics such as energy, tempo, and instrumentalness all reached a nadir around the late 1990's and early 2000's before climbing again to a peak in the 2010's. \nLoudness, danceability, and speechiness, however, all started off relatively lower than the other three characteristics, but steadily increased to their maximum over time" , caption = "Collin McGuire", x = "Year", y = "Average Characteristic Value") +
+  labs(title = "Song Characteristics by Year", subtitle = "Characteristics such as energy, tempo, and instrumentalness all reached a nadir around the late 1990's and early 2000's before climbing again to a peak in \nthe 2010's. Loudness, danceability, and speechiness, however, all started off relatively lower than the other three characteristics, but steadily increased \nto their maximum over time" , caption = "Collin McGuire", x = "Year", y = "Average Characteristic Value") +
   theme(axis.text.x = element_text(size = 6, angle = 45, hjust=1), axis.line = element_line(color = "black"), plot.background = element_rect(fill = "grey87"), panel.background = element_rect(fill = "ghostwhite"))
 ```
 
-##### Part 4
+##### Part 4: Make the worst plot you can!
 
-```{r Part 4 Ugly Graph}
-# folder <- "nickelback"
-# if (file.exists(folder)) {
-#  cat("This folder already exists")
-# } else {
-#  dir.create(folder)
-# }
-# 
-# image_url <- "https://github.com/collinjmcguire/SCAssign1/raw/main/nickelback.jpg"
-# dest_file <- "../nickelback/nickelback.jpg"
-# download.file(image_url, "./nickelback/nickelback.jpg", mode = "wb")
-# nickelback_background <- readJPEG("./nickelback/nickelback.jpg")
+I want to apologize in advance for this plot. No one should have to stare at this image for any length of time.
 
+```{r Part 4 Ugly Graph, fig.height = 8, fig.width = 12}
+# Add fill and color with aes
+# Use geom_hex as a scatterplot replacement
+# Most changes are done in theme, and are quite ugly
 p4base <- ggplot(post_1980, aes(x = track_popularity, y = year_released, fill = playlist_genre, color = playlist_subgenre))
 p4base + geom_hex(alpha = 0.05) +
   geom_smooth() +
   ggtitle("Popularity and Year") +
-  theme(axis.text.x = element_text(size = 24, angle = 85), title = element_text(size = 3), 
+  theme(axis.text.x = element_text(size = 36, angle = 85), title = element_text(size = 3), 
         legend.text = element_text(family = "HersheySymbol", face = "bold.italic"),
         plot.background = element_rect(fill = "darkmagenta"))
 
@@ -141,34 +183,41 @@ p4base + geom_hex(alpha = 0.05) +
 
 * The fifth modification I made was making the titles of the graph very small. Adjusting the size of the titles could be useful to make them more visible.
 
-* The sixth modification I made was changing the font of my legend to Greek symbols. This could be useful if you were performing math equations and needed Greek symbols
+* The sixth modification I made was changing the font of my legend to Greek symbols. This could be useful if you were performing math equations and needed Greek symbols.
 
 * The seventh modification I made was changing the background to magenta. Changing the background of a plot can be useful to help the figure stand out against the background.
 
 
-##### Part 5
+##### Part 5: Make my plot a better plot!
 
 ```{R Part 5, fig.height = 8, fig.width = 12}
-
+# USe labs for the title
+# Most adjustments also made in theme
 spotify_songs %>% 
-  ggplot(aes(y=track_popularity, x=playlist_subgenre, fill = playlist_genre)) + 
-  geom_violin() +
+  ggplot(aes(y=track_popularity, x=playlist_subgenre, fill = playlist_genre)) +
+  labs(title = "Track Popularity by Playlist Genre and Subgenre", x = "Playlist Subgenre", y = "Track Popularity") +
+  geom_violin(trim = TRUE, scale = "count") +
   facet_wrap( ~ playlist_genre, scales = "free_x") +
-  theme(axis.text.x = element_text(size = 10, color = "black", angle = 45, hjust=1))
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(size = 10, color = "black", angle = 30, hjust=1),
+        panel.grid.major = element_line(color = "black"),
+        axis.line = element_line(color = "ghostwhite"),
+        legend.position = "none",
+        plot.background = element_rect(fill = "ghostwhite"), panel.background = element_rect(fill = "grey90"))
 
 
 ```
 
-* The first modification I made
+* The first modification I made was changing the labels for each figure to a smaller size, and angling them, which makes them more readable
 
-* The second modification I made
+* The second modification I made was changing the axis labels from variable names to proper names, aiding readability
 
-* The third modification I made
+* The third modification I made was adding the scales option to the facet wrap, which allows the x axis to scale properly.
 
-* The fourth modification I made
+* The fourth modification I made was adding grid lines to the plots. While this detracts from the minimalism, it greatly improves the ability of a reader to track the level of each value.
 
-* The fifth modification I made
+* The fifth modification I made was removing the legend, as the information conveyed by the legend was already conveyed more effectively by the panel headings.
 
-* The sixth modification I made
+* The sixth modification I made was changing the violin plot scale from area to count, so that proportional number of observations could be observed from the figure.
 
-* The seventh modification I made
+* The seventh modification I made was centering the title above the plot, which helps with readability.
